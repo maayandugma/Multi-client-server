@@ -2,13 +2,13 @@ import socket
 import Protocol_constants
 import select
 import random
-
+import Json_data
 
 users = {}
 questions = {}
 logged_users = {} # a dictionary of client hostnames to usernames - will be used later
 client_sockets = []  # Contain connected client's socket
-messages_to_send = []
+
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5555
@@ -43,22 +43,19 @@ def recv_message_and_parse(sock):
 	return cmd, data
 
 
-
-
-# Data Loaders #
-
-def load_questions():
+def load_questions(sock):
 	"""
-	Loads questions bank from file	## FILE SUPPORT TO BE ADDED LATER
+	Loads questions bank from Json data file. Thif file get the questions from Trivia website.
 	Recieves: -
-	Returns: questions dictionary
+	Returns: The question that will be asked
 	"""
-	questions = {
-				2313 : {"question":"How much is 2+2","answers":["3","4","2","1"],"correct":2},
-				4122 : {"question":"What is the capital of France?","answers":["Lion","Marseille","Paris","Montpellier"],"correct":3} 
-				}
-	
-	return questions
+	global questions
+	index = random.randrange(10)
+	question = Json_data.question_list[index]
+	questions[sock.getpeername()] = Json_data.correct_answer[index]
+	print(questions)
+
+	return question
 
 def load_user_database():
 	"""
@@ -97,30 +94,6 @@ def send_error(sock, data):
 	Returns: None
 	"""
 	build_and_send_message(sock, Protocol_constants.PROTOCOL_SERVER["login_failed_msg"], data)
-
-def create_random_question():
-	"""
-	create random question that will be send to the player
-	Recieves: -
-	Return: question msg to the player
-	"""
-	id_question = []
-	question_list = []
-	answer_list = []
-	question_list_shuffle = []
-	for id in load_questions():
-		id_question.append(id)
-	for value in load_questions().values():
-		answer_list.append(value["answers"])
-		question_list.append(value["question"])
-		question_list_shuffle.append(value["question"])
-	random.shuffle(question_list_shuffle)
-	question = question_list_shuffle[0] # the random question the will be send to the player
-	index = question_list.index(question)  # the index of the question
-	answers = answer_list[index] # the option's answer
-	design_answer = "#".join(answers) # change the answer "look" according to the protocol game
-	msg = (f"{id_question[index]}#{question}#{design_answer}")
-	return msg
 
 
 def print_client_sockets(client_sockets):
@@ -223,8 +196,12 @@ def handle_question_message(sock):
 	Recieves: socket
 	Return : None
 	"""
-	msg = create_random_question()
-	build_and_send_message(sock,Protocol_constants.PROTOCOL_SERVER["the_question_msg"],msg)
+	question = load_questions(sock)
+	print(question)
+	index = Json_data.question_list.index(question)
+	answer = Json_data.protocol_answer[index]
+	msg = f"{question}#{answer}"
+	build_and_send_message(sock, Protocol_constants.PROTOCOL_SERVER["the_question_msg"], msg)
 
 def handle_answer_message(sock, data, username):
 	"""
@@ -233,16 +210,14 @@ def handle_answer_message(sock, data, username):
 
 	"""
 	global users
-	split_data = data.split("#") # convert data to list
-	id_answer = split_data[0]
-	answer = split_data[1]
-	id_dict = load_questions()[int(id_answer)]
-	if answer == str(id_dict["correct"]): # Check if the player guess right
-		build_and_send_message(sock, "CORRECT_ANSWER","")
+	global questions
+
+	if data == questions[sock.getpeername()]:  # Check if the player guess right
+		build_and_send_message(sock, "CORRECT_ANSWER", "")
 		username_dict = users[username]
-		username_dict["score"] += 5 # Updating player points
+		username_dict["score"] += 5  # Updating player points
 	else:
-		build_and_send_message(sock,"WRONG_ANSWER", "") # Send to the player that he was wrong
+		build_and_send_message(sock, "WRONG_ANSWER", "")  # Send to the player that he was wrong
 
 
 def handle_client_message(sock, cmd, data):
