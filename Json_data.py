@@ -1,11 +1,17 @@
 import requests
-import json
 import random
 
 # The questions from website Trivia Game by using "json" command
-url = "https://opentdb.com/api.php?amount=10&category=22&difficulty=medium&type=multiple"
 
-response = requests.get(url)
+parameters = {
+    "amount": 10,
+    "type": "multiple",
+    "difficulty": "medium",
+    "category": "11"
+}
+
+response = requests.get("https://opentdb.com/api.php", params=parameters)
+
 data = response.json()
 json_data = data["results"]
 
