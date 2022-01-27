@@ -12,6 +12,7 @@ def build_and_send_message(sock, cmd, data):
 	Pand(ramaters: conn (socket object), code (str), data (str)
 	Returns: Nothing"""
     msg = Protocol_constants.build_message(cmd,data)
+    print(f"CLIENT:{msg}")
     sock.send(msg.encode())
 
 def recv_message_and_parse(sock):
@@ -22,6 +23,7 @@ def recv_message_and_parse(sock):
 	Returns: cmd (str) and data (str) of the received message.
 	If error occured, will return None, None
 	"""
+    print("flag")
     full_msg = sock.recv(1024).decode()
     cmd, data = Protocol_constants.parse_message(full_msg)
     return cmd, data

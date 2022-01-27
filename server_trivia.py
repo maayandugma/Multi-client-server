@@ -3,10 +3,11 @@ import Protocol_constants
 import select
 import random
 import Json_data
+import html
 
 users = {}
-questions = {}
-logged_users = {} # a dictionary of client hostnames to usernames - will be used later
+questions = {} #Contain the socket of the client and the answer of the question
+logged_users = {} # a dictionary of client hostnames to usernames
 client_sockets = []  # Contain connected client's socket
 
 
@@ -15,19 +16,16 @@ SERVER_PORT = 5555
 SERVER_IP = "0.0.0.0"
 
 
-# HELPER SOCKET METHODS
-
 def build_and_send_message(sock, cmd, data):
 	"""Builds a new message using Protocol_constants, wanted code and message.
 	    	Prints debug info, then sends it to the given socket.
 	    	Paramaters: conn (socket object), code (str), data (str)
 	    	Returns: Nothing """
-	global messages_to_send
+
 	msg = Protocol_constants.build_message(cmd, data)
-	peer_name = sock.getpeername()
-	messages_to_send.append((peer_name, msg))
 	sock.send(msg.encode())
-	print("[SERVER] ", msg)	  # Debug print
+	print("[SERVER] ", msg)  # Debug print
+
 
 def recv_message_and_parse(sock):
 	"""Recieves a new message from given socket,
@@ -45,17 +43,18 @@ def recv_message_and_parse(sock):
 
 def load_questions(sock):
 	"""
-	Loads questions bank from Json data file. Thif file get the questions from Trivia website.
+	Loads questions bank from Json data file. This file get the questions from Trivia website.
 	Recieves: -
 	Returns: The question that will be asked
 	"""
 	global questions
-	index = random.randrange(10)
+	index = random.randrange(10) #I get a random number that will be the index of the question and answer
 	question = Json_data.question_list[index]
+	print(question)
 	questions[sock.getpeername()] = Json_data.correct_answer[index]
-	print(questions)
+	new_q = html.unescape(question[0])
 
-	return question
+	return new_q
 
 def load_user_database():
 	"""
@@ -109,11 +108,8 @@ def handle_getscore_message(sock, username):
 	Return: None
 	"""
 	global users
-	print("hii")
-	print(users)
 	dict_username = users[username]
 	score = dict_username["score"]
-	print(score)
 	build_and_send_message(sock, Protocol_constants.PROTOCOL_SERVER["client score"], str(score))
 
 
@@ -127,7 +123,6 @@ def handle_logout_message(sock):
 	global logged_users
 	global client_sockets
 	global users
-	print(logged_users)
 	username = logged_users[sock.getpeername()]
 	del logged_users[sock.getpeername()]
 	del users[username]
@@ -150,6 +145,7 @@ def handle_login_message(sock, data):
 	password = data_list[1]
 	if user_name in load_user_database().keys():
 		value = load_user_database()[user_name]
+		print(f"value:{value}")
 		if password == value["password"]:
 			logged_users[sock.getpeername()] = user_name
 			users[user_name] = value
@@ -205,7 +201,7 @@ def handle_question_message(sock):
 
 def handle_answer_message(sock, data, username):
 	"""
-	Get socket,message -the answer with id question,and the username.
+	Get socket,message -the answer ,and the username.
 	check if the answer correct ,send a message to the player if he answer wrong or right.
 
 	"""
@@ -263,21 +259,17 @@ def main():
 	while True:
 
 		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, [], []) #The server scaning for new clients
-		print(f"check{ready_to_read}")
-
 		for current_socket in ready_to_read:
-			client_socket = current_socket
 			if current_socket is server_socket:
 				(client_socket, client_address) = current_socket.accept()
 				print("New client join",{client_address})
 				client_sockets.append(client_socket) # Add nee client to the list
-				print(client_socket)
-				print(current_socket)
 
 			else:
 				try:
-					print(f"check2{current_socket}")
 					cmd, data = recv_message_and_parse(current_socket)
+					print(f"cmd={cmd} data={data}")
+
 				except:
 
 					print("connection closed")
