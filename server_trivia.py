@@ -3,10 +3,9 @@ import Protocol_constants
 import select
 import random
 import Json_data
-import html
 
 users = {}
-questions = {} #Contain the socket of the client and the answer of the question
+questions = {} #Contain the socket of the client and the answer of the question and the index
 logged_users = {} # a dictionary of client hostnames to usernames
 client_sockets = []  # Contain connected client's socket
 
@@ -50,11 +49,9 @@ def load_questions(sock):
 	global questions
 	index = random.randrange(10) #I get a random number that will be the index of the question and answer
 	question = Json_data.question_list[index]
-	print(question)
-	questions[sock.getpeername()] = Json_data.correct_answer[index]
-	new_q = html.unescape(question[0])
+	questions[sock.getpeername()] = [Json_data.correct_answer[index], index]
 
-	return new_q
+	return question
 
 def load_user_database():
 	"""
@@ -193,8 +190,7 @@ def handle_question_message(sock):
 	Return : None
 	"""
 	question = load_questions(sock)
-	print(question)
-	index = Json_data.question_list.index(question)
+	index = questions[sock.getpeername()][1]
 	answer = Json_data.protocol_answer[index]
 	msg = f"{question}#{answer}"
 	build_and_send_message(sock, Protocol_constants.PROTOCOL_SERVER["the_question_msg"], msg)
@@ -208,12 +204,15 @@ def handle_answer_message(sock, data, username):
 	global users
 	global questions
 
-	if data == questions[sock.getpeername()]:  # Check if the player guess right
+
+	answer_option = Json_data.ls_answer[questions[sock.getpeername()][1]]
+	if answer_option[int(data)-1] == questions[sock.getpeername()][0]:# Check if the player answer right
+
 		build_and_send_message(sock, "CORRECT_ANSWER", "")
 		username_dict = users[username]
 		username_dict["score"] += 5  # Updating player points
 	else:
-		build_and_send_message(sock, "WRONG_ANSWER", "")  # Send to the player that he was wrong
+		build_and_send_message(sock, "WRONG_ANSWER", f"The answer is {questions[sock.getpeername()][0]}")  # Send to the player that he was wrong
 
 
 def handle_client_message(sock, cmd, data):

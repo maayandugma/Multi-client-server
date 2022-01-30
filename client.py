@@ -79,11 +79,19 @@ def play_question(sock):
     if msg_code == "NO_QUESTIONS":
         logout(sock)
     separation = data.split(Protocol_constants.DATA_DELIMITER)
-    print(f"{separation[1]}\n1-{separation[2]}\n2-{separation[3]}\n3-{separation[4]}\n4-{separation[5]}")
-    q_id = separation[0] # Question's ID
-    answer = input("Please choose an answer[1-4]:")
-    response = build_send_recv_parse(sock, "SEND_ANSWER", f"{q_id}#{answer}")
-    print(response[0])
+    print(f"{separation[0]}\n1-{separation[1]}\n2-{separation[2]}\n3-{separation[3]}\n4-{separation[4]}")
+    flag = True
+    while flag == True:
+        answer = input("Please choose an answer[1-4]:")
+        if answer in ["1", "2", "3", "4"]:
+            flag = False
+            response = build_send_recv_parse(sock, "SEND_ANSWER", answer)
+            if "WRONG" in response[0]:
+                print(response[0],response[1])
+            else:
+                print(response[0])
+
+
 
 def get_logged_users(sock):
     msg_code, data = build_send_recv_parse(sock, Protocol_constants.PROTOCOL_CLIENT["connected client"], "")

@@ -1,6 +1,6 @@
 import requests
 import random
-
+import html
 # The questions from website Trivia Game by using "json" command
 
 parameters = {
@@ -18,20 +18,22 @@ json_data = data["results"]
 question_list = []
 correct_answer = []
 ls_answer = []
+just_question = []
 
 for question in json_data:
-    question_test = question["question"]
-    answer_test = question['correct_answer']
-    question_list.append((question_test,answer_test))
 
+    question_list.append(html.unescape(question["question"]))
 
 for c_answer in json_data:
-    correct_answer.append(c_answer['correct_answer'])
+    correct_answer.append(html.unescape(c_answer['correct_answer']))
+
 for answer in json_data:
     ls = []
     ls.append(answer['correct_answer'])
-    for j in answer["incorrect_answers"]:
-        ls.append(j)
+
+    for j in html.unescape(answer["incorrect_answers"]):
+        ls.append(html.unescape(j))
+
         random.shuffle(ls)
     ls_answer.append(ls)
 protocol_answer = []
@@ -39,4 +41,3 @@ for i in ls_answer:
     sign = "#".join(i)
     protocol_answer.append(sign)
 
-print(protocol_answer)
