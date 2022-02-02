@@ -23,9 +23,7 @@ just_question = []
 for question in json_data:
 
     question_list.append(html.unescape(question["question"]))
-
-for c_answer in json_data:
-    correct_answer.append(html.unescape(c_answer['correct_answer']))
+    correct_answer.append(html.unescape(question['correct_answer']))
 
 for answer in json_data:
     ls = []
